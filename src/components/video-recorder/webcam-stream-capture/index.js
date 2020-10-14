@@ -1,0 +1,1 @@
+export { WebcamStreamCapture } from './WebcamStreamCapture';
