@@ -1,0 +1,9 @@
+.dash-video-player {
+  width: 640px;
+  height: 360px;
+  margin: 1em auto;
+}
+
+.dash-video-player-container {
+  display: flex;
+}
