@@ -41,6 +41,7 @@ export const GetUserMedia = () => {
 
     setChunks([]);
     const videoUrl = window.URL.createObjectURL(blob);
+    console.log(videoUrl);
     video.src = videoUrl;
 
     deleteButton.onclick = function (e) {
@@ -52,6 +53,7 @@ export const GetUserMedia = () => {
 
     socket.emit('upload-video', {
       videoBlob: blob,
+      videoName: clipName,
     });
   };
 
@@ -63,6 +65,7 @@ export const GetUserMedia = () => {
     socket.on('custom-message', (data) => {
       console.log('Custom Message: ', data);
     });
+
     async function init() {
       const mediaStream = await getUserMediaService.startStream();
       setMediaRecorder(
