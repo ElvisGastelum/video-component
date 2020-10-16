@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { GetUserMediaService } from './services';
 import { ReadableWebToNodeStream } from 'readable-web-to-node-stream';
 import { getBlobURL } from '../../utils';
+import io from 'socket.io-client';
+const socket = io('http://localhost:3200/');
 
 export const GetUserMedia = () => {
   const videoRef = useRef(null);
   const videoList = useRef(null);
   const getUserMediaService = new GetUserMediaService({
-    withAudio: false,
+    withAudio: true,
   });
   const [mediaRecorder, setMediaRecorder] = useState(undefined);
   const [chunks, setChunks] = useState([]);
@@ -20,6 +22,7 @@ export const GetUserMedia = () => {
 
   const onStop = (e) => {
     const clipName = prompt('Enter a name for your sound clip');
+    const blob = new Blob(chunks, { type: 'video/webm' });
 
     const clipContainer = document.createElement('article');
     const clipLabel = document.createElement('p');
@@ -36,7 +39,6 @@ export const GetUserMedia = () => {
     clipContainer.appendChild(deleteButton);
     videoList.current.appendChild(clipContainer);
 
-    const blob = new Blob(chunks, { type: 'video/webm' });
     setChunks([]);
     const videoUrl = window.URL.createObjectURL(blob);
     video.src = videoUrl;
@@ -46,42 +48,28 @@ export const GetUserMedia = () => {
       evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
     };
 
-    var fd = new FormData();
-    fd.append('videoBlob', blob, 'video.webm');
-
     console.log('sending data to the server');
-    fetch('http://localhost:3200/api/video', {
-      method: 'POST',
-      body: fd,
-      headers: {
-        // 'Content-Type': 'application/json'
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }).then(async (res) => {
-      console.log('data received from the server');
-      const stream = res.body;
-      const nodeStream = new ReadableWebToNodeStream(stream);
 
-      const url = await getBlobURL(nodeStream, 'video/webm');
-      const a = document.createElement('a');
-      a.style = 'display: none';
-      a.href = url;
-      a.download = 'video.webm';
-      document.body.appendChild(a);
-      console.log('downloading file comming from server');
-      a.click();
-      URL.revokeObjectURL(url);
+    socket.emit('upload-video', {
+      videoBlob: blob,
     });
   };
 
   useEffect(() => {
+    socket.on('connect', function (socket) {
+      console.info('Socket Connected');
+    });
+
+    socket.on('custom-message', (data) => {
+      console.log('Custom Message: ', data);
+    });
     async function init() {
       const mediaStream = await getUserMediaService.startStream();
       setMediaRecorder(
         getUserMediaService.createMediaRecorder({
           audioBitsPerSecond: 128000,
           videoBitsPerSecond: 2500000,
-          mimeType: 'video/webm;codec=vp9',
+          mimeType: 'video/webm',
         })
       );
       videoRef.current.srcObject = mediaStream;
