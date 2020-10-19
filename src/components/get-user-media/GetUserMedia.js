@@ -1,16 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GetUserMediaService } from './services';
-import { ReadableWebToNodeStream } from 'readable-web-to-node-stream';
-import { getBlobURL } from '../../utils';
 import io from 'socket.io-client';
 const socket = io('http://localhost:3200/');
 
 export const GetUserMedia = () => {
   const videoRef = useRef(null);
   const videoList = useRef(null);
-  const getUserMediaService = new GetUserMediaService({
-    withAudio: true,
-  });
+  const getUserMediaService = useRef(null);
   const [mediaRecorder, setMediaRecorder] = useState(undefined);
   const [chunks, setChunks] = useState([]);
 
@@ -67,9 +63,12 @@ export const GetUserMedia = () => {
     });
 
     async function init() {
-      const mediaStream = await getUserMediaService.startStream();
+      getUserMediaService.current = new GetUserMediaService({
+        withAudio: true,
+      });
+      const mediaStream = await getUserMediaService.current.startStream();
       setMediaRecorder(
-        getUserMediaService.createMediaRecorder({
+        getUserMediaService.current.createMediaRecorder({
           audioBitsPerSecond: 128000,
           videoBitsPerSecond: 2500000,
           mimeType: 'video/webm',
