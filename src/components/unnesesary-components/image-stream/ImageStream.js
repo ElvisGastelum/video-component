@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { getBlobURL } from '../../utils';
+import { getBlobURL } from '../../../utils';
 import { ReadableWebToNodeStream } from 'readable-web-to-node-stream';
 
 export const ImageStream = () => {

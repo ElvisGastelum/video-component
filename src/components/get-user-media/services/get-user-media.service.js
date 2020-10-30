@@ -1,7 +1,8 @@
 export class GetUserMediaService {
   mediaRecorder = null;
   stream = null;
-  chunks = null;
+  chunks = [];
+  blob = null;
 
   constructor({ withVideo, withAudio }) {
     this.withVideo = withVideo;
@@ -45,11 +46,42 @@ export class GetUserMediaService {
     return this.stream;
   };
 
-  createMediaRecorder = ({...options}) => {
+  createMediaRecorder = ({ ...options }) => {
     if (!this.stream) {
       throw new Error('You need start an stream before create MediaRecorder');
     }
     this.mediaRecorder = new MediaRecorder(this.stream, { ...options });
     return this.mediaRecorder;
   };
+
+  startRecording({ onStopCallback, blobOptions }) {
+    const onDataAvailable = ({ data }) => {
+      if (data.size > 0) {
+        this.chunks.push(data);
+      }
+    };
+
+    const onStop = () => {
+      this.blob = new Blob(this.chunks, blobOptions);
+      this.chunks = [];
+
+      onStopCallback(this.blob);
+    };
+
+    if (this.mediaRecorder.state === 'inactive') {
+      this.mediaRecorder.ondataavailable = onDataAvailable;
+      this.mediaRecorder.onstop = onStop;
+      this.mediaRecorder.start();
+      return;
+    }
+    console.error("You can't start a record in active media stream");
+  }
+
+  stopRecording() {
+    if (this.mediaRecorder.state === 'recording') {
+      this.mediaRecorder.stop();
+      return;
+    }
+    console.error('You need start a record before stop');
+  }
 }
